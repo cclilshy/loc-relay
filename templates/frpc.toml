@@ -1,0 +1,7 @@
+serverAddr = "127.0.0.1"
+serverPort = 7000
+
+auth.method = "token"
+auth.token = "change-me"
+
+includes = ["frpc.d/*.toml"]

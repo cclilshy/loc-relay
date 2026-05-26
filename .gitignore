@@ -1,0 +1,35 @@
+# Rust and local build cache
+target/
+.cargo-home/
+.rustup-home/
+
+# Runtime leftovers
+*.pid
+*.log
+
+# Android and Gradle local state
+android/.gradle/
+android/.cxx/
+android/**/build/
+android/captures/
+android/local.properties
+local.properties
+android/app/src/main/jniLibs/
+
+# Release/package outputs
+dist/
+*.apk
+*.aab
+
+# Signing material and local secrets
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+*.env
+
+# Editor and OS local files
+.vscode/
+.idea/
+*.iml
+.DS_Store

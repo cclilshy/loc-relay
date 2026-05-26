@@ -1,0 +1,62 @@
+plugins {
+    id 'com.android.application'
+}
+
+def releaseKeystoreFile = System.getenv('LOC_RELAY_KEYSTORE_FILE')
+def releaseKeystorePassword = System.getenv('LOC_RELAY_KEYSTORE_PASSWORD')
+def releaseKeyAlias = System.getenv('LOC_RELAY_KEY_ALIAS')
+def releaseKeyPassword = System.getenv('LOC_RELAY_KEY_PASSWORD')
+def hasReleaseSigning = releaseKeystoreFile && releaseKeystorePassword && releaseKeyAlias && releaseKeyPassword
+
+android {
+    namespace 'com.cclilshy.locrelay'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'com.cclilshy.locrelay'
+        minSdk 26
+        targetSdk 28
+        versionCode 1
+        versionName '0.1.0'
+
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+    }
+
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(releaseKeystoreFile)
+                storePassword releaseKeystorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    lint {
+        disable 'ExpiredTargetSdkVersion'
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging true
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation 'androidx.core:core:1.18.0'
+    implementation 'com.google.android.material:material:1.14.0'
+    implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
+    testImplementation 'junit:junit:4.13.2'
+}

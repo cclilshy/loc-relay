@@ -1,0 +1,11 @@
+<resources>
+    <color name="color_primary">#006C67</color>
+    <color name="color_primary_container">#D8F3EF</color>
+    <color name="color_background">#F7F9FC</color>
+    <color name="color_surface">#FFFFFF</color>
+    <color name="color_surface_variant">#EEF3F7</color>
+    <color name="color_outline">#D8DEE8</color>
+    <color name="color_text">#172026</color>
+    <color name="color_muted">#64717D</color>
+    <color name="ic_launcher_background">#000000</color>
+</resources>
