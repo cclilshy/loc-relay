@@ -66,6 +66,26 @@ printf '%s\n' "$android_frpc_plan" | grep -F 'armeabi-v7a android/arm ndk' >/dev
 printf '%s\n' "$android_frpc_plan" | grep -F 'x86_64 android/amd64 ndk' >/dev/null 2>&1 || fail "Android frpc plan must use NDK for x86_64"
 printf '%s\n' "$android_frpc_plan" | grep -F 'x86 android/386 ndk' >/dev/null 2>&1 || fail "Android frpc plan must use NDK for x86"
 
+case "$(uname -m)" in
+	x86_64|amd64)
+		published_linux_bin="$repo_root/bin/loc-relay-linux-amd64"
+		;;
+	aarch64|arm64)
+		published_linux_bin="$repo_root/bin/loc-relay-linux-arm64"
+		;;
+	*)
+		published_linux_bin=
+		;;
+esac
+if [ -n "$published_linux_bin" ]; then
+	LOC_RELAY_HOME="$tmp_dir/published-frps-info" "$published_linux_bin" init-server \
+		--token server-token \
+		--addr frp.example.com \
+		--raw-base-url https://example.com/scripts
+	assert_contains "$tmp_dir/published-frps-info/server-install.json" '"addr": "frp.example.com"'
+	assert_contains "$tmp_dir/published-frps-info/server-install.json" '"raw_base_url": "https://example.com/scripts"'
+fi
+
 test_bin="$tmp_dir/loc-relay-bin"
 cargo build --manifest-path "$repo_root/Cargo.toml" --target-dir "$tmp_dir/target" >/tmp/loc-relay-cargo-build.log
 cp "$tmp_dir/target/debug/loc-relay" "$test_bin"
