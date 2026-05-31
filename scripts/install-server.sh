@@ -22,6 +22,13 @@ HTTPS_PORT=${HTTPS_PORT:-}
 SKIP_START=${SKIP_START:-0}
 SERVER_ADDR=${SERVER_ADDR:-}
 TOKEN=${TOKEN:-}
+if [ -z "${BIN_DIR:-}" ]; then
+    if [ "$(id -u 2>/dev/null || printf '1')" = "0" ]; then
+        BIN_DIR=/usr/local/bin
+    else
+        BIN_DIR="$HOME/.local/bin"
+    fi
+fi
 SERVER_ADDR_EXPLICIT=0
 HTTP_PORT_EXPLICIT=0
 HTTPS_PORT_EXPLICIT=0
@@ -215,6 +222,23 @@ select_tayd_binary() {
     die "no prebuilt tayd binary for $target; run ./build.sh before publishing"
 }
 
+install_tayd_command() {
+    tayd_bin=$1
+    mkdir -p "$BIN_DIR"
+    ln -sf "$tayd_bin" "$BIN_DIR/tayd"
+    if [ -L "$BIN_DIR/loc-relay" ]; then
+        rm -f "$BIN_DIR/loc-relay"
+    fi
+
+    case ":$PATH:" in
+    *":$BIN_DIR:"*)
+        return
+        ;;
+    esac
+
+    echo "Use $BIN_DIR/tayd when tayd is not in PATH."
+}
+
 parse_args "$@"
 existing_server_info
 clone_or_update
@@ -242,6 +266,7 @@ fi
 
 TAYD_BIN=$(select_tayd_binary)
 INSTALL_DIR="$INSTALL_DIR" "$INSTALL_DIR/scripts/install-frp.sh"
+install_tayd_command "$TAYD_BIN"
 set -- init-server --token "$TOKEN" --port "$SERVER_PORT" --addr "$addr" --raw-base-url "$RAW_BASE_URL"
 if [ -n "$HTTP_PORT" ]; then
 	set -- "$@" --http-port "$HTTP_PORT"

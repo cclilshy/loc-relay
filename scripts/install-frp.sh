@@ -9,6 +9,20 @@ die() {
     exit 1
 }
 
+install_binary() {
+    src=$1
+    dest=$2
+    tmp="$dest.tmp.$$"
+
+    rm -f "$tmp"
+    if cp "$src" "$tmp" && chmod 755 "$tmp" && mv -f "$tmp" "$dest"; then
+        return 0
+    fi
+
+    rm -f "$tmp"
+    return 1
+}
+
 frp_target() {
     os=$(uname -s | tr '[:upper:]' '[:lower:]')
     arch=$(uname -m)
@@ -46,6 +60,5 @@ mkdir -p "$INSTALL_DIR/bin"
 frp_dir=$(find "$tmp_dir" -type d -name "frp_${FRP_VERSION}_${target}" | head -n 1)
 [ -n "$frp_dir" ] || die "could not find extracted FRP directory"
 
-cp "$frp_dir/frpc" "$INSTALL_DIR/bin/frpc"
-cp "$frp_dir/frps" "$INSTALL_DIR/bin/frps"
-chmod +x "$INSTALL_DIR/bin/frpc" "$INSTALL_DIR/bin/frps"
+install_binary "$frp_dir/frpc" "$INSTALL_DIR/bin/frpc"
+install_binary "$frp_dir/frps" "$INSTALL_DIR/bin/frps"

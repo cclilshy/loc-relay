@@ -332,6 +332,7 @@ default_client_list=$(HOME="$default_home" "$default_bin_dir/tayd" list)
 printf '%s\n' "$default_client_list" | grep -F 'no mappings' >/dev/null 2>&1 || fail "default client list did not report no mappings"
 
 HOME="$default_home" \
+	BIN_DIR="$default_bin_dir" \
 	REPO_URL="$src" \
 	SKIP_START=1 \
 	SKIP_FRP_DOWNLOAD=1 \
@@ -340,6 +341,7 @@ HOME="$default_home" \
 default_server_dir="$default_home/.tayd-server"
 [ -e "$default_server_dir/.tayd-server" ] || fail "default server install marker was not created"
 assert_contains "$default_server_dir/frps.toml" 'auth.token = '
+[ -x "$default_bin_dir/tayd" ] || fail "default server installer did not create tayd command"
 [ -e "$default_client_dir/frpc.toml" ] || fail "default server install clobbered client config"
 [ ! -e "$default_home/.tayd" ] || fail "default installers still wrote to shared ~/.tayd"
 
