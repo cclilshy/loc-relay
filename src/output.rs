@@ -11,6 +11,9 @@ use std::{
 
 const DEFAULT_RAW_BASE_URL: &str =
     "https://raw.githubusercontent.com/cclilshy/loc-relay/main/scripts";
+const TERMINAL_QR_QUIET_ZONE: isize = 4;
+const TERMINAL_QR_STYLE: &str = "\x1b[30;47m";
+const TERMINAL_QR_RESET: &str = "\x1b[0m";
 
 fn type_label(types: &[String]) -> String {
     types.join(",")
@@ -115,24 +118,34 @@ fn render_terminal_qr(payload: &str) -> Result<String> {
     let code = QrCode::new(payload.as_bytes())?;
     let width = code.width();
     let colors = code.to_colors();
-    let quiet = 1isize;
+    let quiet = TERMINAL_QR_QUIET_ZONE;
     let mut output = String::new();
-    for y in -quiet..(width as isize + quiet) {
+
+    for top_y in (-quiet..(width as isize + quiet)).step_by(2) {
+        output.push_str(TERMINAL_QR_STYLE);
         for x in -quiet..(width as isize + quiet) {
-            let dark = if x >= 0 && y >= 0 && x < width as isize && y < width as isize {
-                colors[y as usize * width + x as usize] == QrColor::Dark
-            } else {
-                false
-            };
-            output.push_str(if dark {
-                "\x1b[40m \x1b[0m"
-            } else {
-                "\x1b[47m \x1b[0m"
+            let top_dark = terminal_qr_module_is_dark(&colors, width, x, top_y);
+            let bottom_dark = terminal_qr_module_is_dark(&colors, width, x, top_y + 1);
+            output.push(match (top_dark, bottom_dark) {
+                (true, true) => '█',
+                (true, false) => '▀',
+                (false, true) => '▄',
+                (false, false) => ' ',
             });
         }
+        output.push_str(TERMINAL_QR_RESET);
         output.push('\n');
     }
+
     Ok(output)
+}
+
+fn terminal_qr_module_is_dark(colors: &[QrColor], width: usize, x: isize, y: isize) -> bool {
+    if x >= 0 && y >= 0 && x < width as isize && y < width as isize {
+        colors[y as usize * width + x as usize] == QrColor::Dark
+    } else {
+        false
+    }
 }
 
 fn url_encode(value: &str) -> String {
@@ -145,6 +158,61 @@ fn url_encode(value: &str) -> String {
         }
     }
     encoded
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn terminal_qr_renders_square_modules_with_standard_quiet_zone() {
+        let payload =
+            "tayd://server?addr=frp.example.com&port=7000&token=0123456789abcdef0123456789abcdef0123456789abcdef";
+        let qr = render_terminal_qr(payload).expect("QR should render");
+        let code = QrCode::new(payload.as_bytes()).expect("payload should be encodable");
+        let module_width = code.width() + (TERMINAL_QR_QUIET_ZONE as usize * 2);
+        let lines: Vec<&str> = qr.lines().collect();
+
+        assert_eq!(lines.len(), module_width.div_ceil(2));
+        for line in &lines {
+            assert!(line.starts_with(TERMINAL_QR_STYLE));
+            assert!(line.ends_with(TERMINAL_QR_RESET));
+            assert_eq!(strip_ansi(line).chars().count(), module_width);
+        }
+    }
+
+    #[test]
+    fn terminal_qr_keeps_white_border_for_scanners() {
+        let payload = "tayd://server?addr=frp.example.com&port=7000&token=server-token";
+        let qr = render_terminal_qr(payload).expect("QR should render");
+        let visible_lines: Vec<String> = qr.lines().map(strip_ansi).collect();
+        let quiet = TERMINAL_QR_QUIET_ZONE as usize;
+
+        for line in visible_lines.iter().take(quiet / 2) {
+            assert!(line.chars().all(|ch| ch == ' '));
+        }
+        for line in &visible_lines {
+            assert!(line.chars().take(quiet).all(|ch| ch == ' '));
+            assert!(line.chars().rev().take(quiet).all(|ch| ch == ' '));
+        }
+    }
+
+    fn strip_ansi(value: &str) -> String {
+        let mut output = String::new();
+        let mut chars = value.chars();
+        while let Some(ch) = chars.next() {
+            if ch == '\x1b' {
+                for next in chars.by_ref() {
+                    if next == 'm' {
+                        break;
+                    }
+                }
+            } else {
+                output.push(ch);
+            }
+        }
+        output
+    }
 }
 
 pub(crate) fn usage() {
