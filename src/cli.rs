@@ -36,11 +36,9 @@ pub(crate) fn run() -> Result<()> {
         "show" => cmd_show(&rest),
         "render" => cmd_render(),
         "verify" => run_frp("frpc", &["verify", "-c", "frpc.toml"]),
-        "restart" => {
-            stop_process("frpc")?;
-            start_process("frpc", &["-c", "frpc.toml"])
-        }
+        "restart" => cmd_restart(),
         "install" | "up" => start_process("frpc", &["-c", "frpc.toml"]),
+        "info" => cmd_server_info(),
         "server" => cmd_server(&rest),
         "server-up" => start_process("frps", &["-c", "frps.toml"]),
         "server-down" => stop_process("frps"),
@@ -232,7 +230,7 @@ fn cmd_init(args: &[String]) -> Result<()> {
 fn cmd_add(args: &[String]) -> Result<()> {
     if args.len() < 3 {
         return Err(
-            "usage: loc-relay add <name> <local> <remote> [--type tcp|udp|both|tcp,udp|http|https] [--group name --group-key key] [--crt path --key path] [--no-restart]"
+            "usage: tayd add <name> <local> <remote> [--type tcp|udp|both|tcp,udp|http|https] [--group name --group-key key] [--crt path --key path] [--no-restart]"
                 .into(),
         );
     }
@@ -292,7 +290,7 @@ fn cmd_add(args: &[String]) -> Result<()> {
     let mut state = load_state()?;
     if state.proxies.iter().any(|proxy| proxy.name == name) {
         return Err(format!(
-            "[error] mapping \"{name}\" already exists\nhint: use `loc-relay remove {name}` first"
+            "[error] mapping \"{name}\" already exists\nhint: use `tayd remove {name}` first"
         )
         .into());
     }
@@ -325,7 +323,7 @@ fn cmd_add(args: &[String]) -> Result<()> {
 
 fn cmd_remove(args: &[String]) -> Result<()> {
     if args.is_empty() || args.len() > 2 {
-        return Err("usage: loc-relay remove <name> [--no-restart]".into());
+        return Err("usage: tayd remove <name> [--no-restart]".into());
     }
 
     let mut name: Option<&String> = None;
@@ -340,7 +338,7 @@ fn cmd_remove(args: &[String]) -> Result<()> {
         }
     }
 
-    let name = name.ok_or("usage: loc-relay remove <name> [--no-restart]")?;
+    let name = name.ok_or("usage: tayd remove <name> [--no-restart]")?;
     let mut state = load_state()?;
     let index = state
         .proxies
@@ -378,7 +376,7 @@ fn cmd_list() -> Result<()> {
 
 fn cmd_show(args: &[String]) -> Result<()> {
     if args.len() > 1 {
-        return Err("usage: loc-relay show [name]".into());
+        return Err("usage: tayd show [name]".into());
     }
     let state = load_state()?;
     for proxy in state.proxies {
@@ -405,16 +403,20 @@ fn cmd_render() -> Result<()> {
 
 fn cmd_down() -> Result<()> {
     let home = loc_relay_home()?;
-    let marker = home.join(".loc-relay-client");
-    if !marker.exists() && env::var("LOC_RELAY_FORCE_DOWN").ok().as_deref() != Some("1") {
+    let marker = home.join(".tayd-client");
+    let legacy_marker = home.join(".loc-relay-client");
+    if !marker.exists()
+        && !legacy_marker.exists()
+        && !env_flag("TAYD_FORCE_DOWN", "LOC_RELAY_FORCE_DOWN")
+    {
         return Err(format!(
-            "{} is not marked as a client install; set LOC_RELAY_FORCE_DOWN=1 to remove it anyway",
+            "{} is not marked as a client install; set TAYD_FORCE_DOWN=1 to remove it anyway",
             home.display()
         )
         .into());
     }
 
-    if env::var("LOC_RELAY_SKIP_STOP").ok().as_deref() != Some("1") {
+    if !env_flag("TAYD_SKIP_STOP", "LOC_RELAY_SKIP_STOP") {
         let _ = stop_process("frpc");
     }
 
@@ -425,9 +427,18 @@ fn cmd_down() -> Result<()> {
     Ok(())
 }
 
+fn cmd_restart() -> Result<()> {
+    if restart_service_if_running()? {
+        println!("{} client gateway", status("restarted"));
+        return Ok(());
+    }
+    stop_process("frpc")?;
+    start_process("frpc", &["-c", "frpc.toml"])
+}
+
 fn cmd_service(args: &[String]) -> Result<()> {
     if args.len() != 1 {
-        return Err("usage: loc-relay service <install|uninstall|status>".into());
+        return Err("usage: tayd service <install|uninstall|status>".into());
     }
     match args[0].as_str() {
         "install" => install_service(),
@@ -439,11 +450,15 @@ fn cmd_service(args: &[String]) -> Result<()> {
 
 fn cmd_server(args: &[String]) -> Result<()> {
     if args.len() != 1 {
-        return Err("usage: loc-relay server <install|uninstall|info|log>".into());
+        return Err("usage: tayd server <install|uninstall|restart|info|log>".into());
     }
     match args[0].as_str() {
         "install" => start_process("frps", &["-c", "frps.toml"]),
         "uninstall" => stop_process("frps"),
+        "restart" => {
+            stop_process("frps")?;
+            start_process("frps", &["-c", "frps.toml"])
+        }
         "info" | "log" => cmd_server_info(),
         unknown => Err(format!("unknown server command: {unknown}").into()),
     }
@@ -452,6 +467,10 @@ fn cmd_server(args: &[String]) -> Result<()> {
 fn cmd_server_info() -> Result<()> {
     let info = load_server_install_info()?;
     print_server_install_info(&info)
+}
+
+fn env_flag(primary: &str, legacy: &str) -> bool {
+    env::var(primary).ok().as_deref() == Some("1") || env::var(legacy).ok().as_deref() == Some("1")
 }
 
 fn option_value(args: &[String], index: usize) -> Result<&str> {

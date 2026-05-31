@@ -12,7 +12,7 @@ param(
     [int]$LocalPort = 0,
     [string]$LocalEndpoint = "",
     [int]$RemotePort = 0,
-    [string]$InstallDir = (Join-Path $HOME ".loc-relay-client"),
+    [string]$InstallDir = "",
     [string]$BinDir = (Join-Path $HOME ".local\bin"),
     [string]$RepoUrl = "https://github.com/cclilshy/loc-relay.git",
     [string]$FrpVersion = "0.69.0",
@@ -24,6 +24,13 @@ $ErrorActionPreference = "Stop"
 
 if ($env:INSTALL_DIR) { $InstallDir = $env:INSTALL_DIR }
 elseif ($env:CLIENT_INSTALL_DIR) { $InstallDir = $env:CLIENT_INSTALL_DIR }
+elseif ($InstallDir -eq "") {
+    $taydClientDir = Join-Path $HOME ".tayd-client"
+    $legacyClientDir = Join-Path $HOME ".loc-relay-client"
+    if (Test-Path $taydClientDir) { $InstallDir = $taydClientDir }
+    elseif (Test-Path $legacyClientDir) { $InstallDir = $legacyClientDir }
+    else { $InstallDir = $taydClientDir }
+}
 if ($env:BIN_DIR) { $BinDir = $env:BIN_DIR }
 if ($env:REPO_URL) { $RepoUrl = $env:REPO_URL }
 if ($env:FRP_VERSION) { $FrpVersion = $env:FRP_VERSION }
@@ -43,7 +50,7 @@ function Require-Command {
     }
 }
 
-function Get-LocRelayArch {
+function Get-TaydArch {
     switch ($env:PROCESSOR_ARCHITECTURE) {
         "AMD64" { return "amd64" }
         "ARM64" { return "arm64" }
@@ -67,10 +74,12 @@ function Clone-Or-Update {
     git clone $RepoUrl $InstallDir
 }
 
-function Select-LocRelayBinary {
-    $arch = Get-LocRelayArch
+function Select-TaydBinary {
+    $arch = Get-TaydArch
     $candidates = @(
+        (Join-Path $InstallDir "bin\tayd-windows-$arch.exe"),
         (Join-Path $InstallDir "bin\loc-relay-windows-$arch.exe"),
+        (Join-Path $InstallDir "bin\tayd.exe"),
         (Join-Path $InstallDir "bin\loc-relay.exe")
     )
 
@@ -80,7 +89,7 @@ function Select-LocRelayBinary {
         }
     }
 
-    throw "no prebuilt loc-relay binary for windows-$arch; run ./build.sh before publishing"
+    throw "no prebuilt tayd binary for windows-$arch; run ./build.sh before publishing"
 }
 
 function Install-Frp {
@@ -88,10 +97,10 @@ function Install-Frp {
         return
     }
 
-    $arch = Get-LocRelayArch
+    $arch = Get-TaydArch
     $archive = "frp_${FrpVersion}_windows_${arch}.zip"
     $url = "https://github.com/fatedier/frp/releases/download/v${FrpVersion}/${archive}"
-    $tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ("loc-relay-" + [System.Guid]::NewGuid().ToString("N"))
+    $tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ("tayd-" + [System.Guid]::NewGuid().ToString("N"))
     $zip = Join-Path $tmpDir $archive
 
     New-Item -ItemType Directory -Force -Path $tmpDir | Out-Null
@@ -114,21 +123,23 @@ function Install-Frp {
     }
 }
 
-function Install-LocRelayCommand {
-    param([string]$LocRelayBin)
+function Install-TaydCommand {
+    param([string]$TaydBin)
 
     New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
-    $cmd = Join-Path $BinDir "loc-relay.cmd"
-    "@echo off`r`n`"$LocRelayBin`" %*`r`n" | Set-Content -Path $cmd -Encoding ASCII
+    $cmd = Join-Path $BinDir "tayd.cmd"
+    "@echo off`r`n`"$TaydBin`" %*`r`n" | Set-Content -Path $cmd -Encoding ASCII
+    $legacyCmd = Join-Path $BinDir "loc-relay.cmd"
+    Remove-Item $legacyCmd -Force -ErrorAction SilentlyContinue
     return $cmd
 }
 
 Clone-Or-Update
 
-$locRelayBin = Select-LocRelayBinary
+$taydBin = Select-TaydBinary
 Install-Frp
 
-& $locRelayBin init `
+& $taydBin init `
     --server $ServerAddr `
     --token $Token `
     --server-port $ServerPort
@@ -147,29 +158,30 @@ if ($proxyConfigured) {
         }
     }
 
+    & $taydBin remove $ProxyName --no-restart *> $null
     $addArgs = @("add", $ProxyName, $LocalEndpoint, [string]$RemotePort)
     if ($ProxyType -ne "") {
         $addArgs += @("--type", $ProxyType)
     }
     $addArgs += "--no-restart"
-    & $locRelayBin @addArgs
+    & $taydBin @addArgs
 }
 
-New-Item -ItemType File -Force -Path (Join-Path $InstallDir ".loc-relay-client") | Out-Null
-$locRelayCmd = Install-LocRelayCommand $locRelayBin
+New-Item -ItemType File -Force -Path (Join-Path $InstallDir ".tayd-client") | Out-Null
+$taydCmd = Install-TaydCommand $taydBin
 
 if (-not $SkipStart) {
-    & $locRelayBin install
-    Write-Output "[started] client gateway"
+    & $taydBin restart
+    Write-Output "[restarted] client gateway"
 }
 else {
     Write-Output "[saved] start skipped"
 }
 
-Write-Output "[installed] loc-relay client -> $InstallDir"
+Write-Output "[installed] tayd client -> $InstallDir"
 Write-Output "[server] ${ServerAddr}:${ServerPort}"
-Write-Output "[command] $locRelayCmd"
+Write-Output "[command] $taydCmd"
 if ($proxyConfigured) {
     Write-Output "[proxy] $ProxyName $LocalEndpoint -> $RemotePort"
 }
-Write-Output "[uninstall] & `"$locRelayCmd`" uninstall"
+Write-Output "[uninstall] & `"$taydCmd`" uninstall"

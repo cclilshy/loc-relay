@@ -22,7 +22,7 @@ pub(crate) fn config_home() -> Result<PathBuf> {
 }
 
 pub(crate) fn loc_relay_home() -> io::Result<PathBuf> {
-    if let Ok(home) = env::var("LOC_RELAY_HOME") {
+    if let Ok(home) = env::var("TAYD_HOME").or_else(|_| env::var("LOC_RELAY_HOME")) {
         let path = PathBuf::from(home);
         if path.exists() {
             return fs::canonicalize(path);

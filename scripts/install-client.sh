@@ -2,7 +2,17 @@
 set -eu
 
 REPO_URL=${REPO_URL:-https://github.com/cclilshy/loc-relay.git}
-INSTALL_DIR=${INSTALL_DIR:-${CLIENT_INSTALL_DIR:-"$HOME/.loc-relay-client"}}
+if [ -z "${INSTALL_DIR:-}" ] && [ -z "${CLIENT_INSTALL_DIR:-}" ]; then
+	if [ -d "$HOME/.tayd-client" ]; then
+		INSTALL_DIR="$HOME/.tayd-client"
+	elif [ -d "$HOME/.loc-relay-client" ]; then
+		INSTALL_DIR="$HOME/.loc-relay-client"
+	else
+		INSTALL_DIR="$HOME/.tayd-client"
+	fi
+else
+	INSTALL_DIR=${INSTALL_DIR:-$CLIENT_INSTALL_DIR}
+fi
 BIN_DIR=${BIN_DIR:-"$HOME/.local/bin"}
 SERVER_ADDR=${1:-${SERVER_ADDR:-}}
 TOKEN=${2:-${TOKEN:-}}
@@ -32,7 +42,7 @@ clone_or_update() {
 	fi
 }
 
-loc_relay_target() {
+tayd_target() {
 	os=$(uname -s | tr '[:upper:]' '[:lower:]')
 	arch=$(uname -m)
 	case "$arch" in
@@ -49,27 +59,29 @@ loc_relay_target() {
 	printf '%s-%s\n' "$os" "$arch"
 }
 
-select_loc_relay_binary() {
-	target=$(loc_relay_target)
-	candidate="$INSTALL_DIR/bin/loc-relay-$target"
-	if [ -x "$candidate" ]; then
-		printf '%s\n' "$candidate"
-		return
-	fi
+select_tayd_binary() {
+	target=$(tayd_target)
+	for candidate in \
+		"$INSTALL_DIR/bin/tayd-$target" \
+		"$INSTALL_DIR/bin/loc-relay-$target" \
+		"$INSTALL_DIR/bin/tayd" \
+		"$INSTALL_DIR/bin/loc-relay"; do
+		if [ -x "$candidate" ]; then
+			printf '%s\n' "$candidate"
+			return
+		fi
+	done
 
-	candidate="$INSTALL_DIR/bin/loc-relay"
-	if [ -x "$candidate" ]; then
-		printf '%s\n' "$candidate"
-		return
-	fi
-
-	die "no prebuilt loc-relay binary for $target; run ./build.sh before publishing"
+	die "no prebuilt tayd binary for $target; run ./build.sh before publishing"
 }
 
-install_loc_relay_command() {
-	loc_relay_bin=$1
+install_tayd_command() {
+	tayd_bin=$1
 	mkdir -p "$BIN_DIR"
-	ln -sf "$loc_relay_bin" "$BIN_DIR/loc-relay"
+	ln -sf "$tayd_bin" "$BIN_DIR/tayd"
+	if [ -L "$BIN_DIR/loc-relay" ]; then
+		rm -f "$BIN_DIR/loc-relay"
+	fi
 
 	case ":$PATH:" in
 	*":$BIN_DIR:"*)
@@ -77,7 +89,7 @@ install_loc_relay_command() {
 		;;
 	esac
 
-	echo "Use $BIN_DIR/loc-relay when loc-relay is not in PATH."
+	echo "Use $BIN_DIR/tayd when tayd is not in PATH."
 }
 
 [ -n "$SERVER_ADDR" ] || die "usage: install-client.sh <server_addr> <token>"
@@ -85,10 +97,10 @@ install_loc_relay_command() {
 
 clone_or_update
 
-LOC_RELAY_BIN=$(select_loc_relay_binary)
+TAYD_BIN=$(select_tayd_binary)
 INSTALL_DIR="$INSTALL_DIR" "$INSTALL_DIR/scripts/install-frp.sh"
 
-"$LOC_RELAY_BIN" init \
+"$TAYD_BIN" init \
 	--server "$SERVER_ADDR" \
 	--token "$TOKEN" \
 	--server-port "$SERVER_PORT"
@@ -106,28 +118,29 @@ if [ -n "$PROXY_NAME" ] || [ -n "$LOCAL_ENDPOINT" ] || [ -n "$LOCAL_PORT" ] || [
 		fi
 	fi
 
+	"$TAYD_BIN" remove "$PROXY_NAME" --no-restart >/dev/null 2>&1 || true
 	if [ -n "$PROXY_TYPE" ]; then
-		"$LOC_RELAY_BIN" add "$PROXY_NAME" "$LOCAL_ENDPOINT" "$REMOTE_PORT" --type "$PROXY_TYPE" --no-restart
+		"$TAYD_BIN" add "$PROXY_NAME" "$LOCAL_ENDPOINT" "$REMOTE_PORT" --type "$PROXY_TYPE" --no-restart
 	else
-		"$LOC_RELAY_BIN" add "$PROXY_NAME" "$LOCAL_ENDPOINT" "$REMOTE_PORT" --no-restart
+		"$TAYD_BIN" add "$PROXY_NAME" "$LOCAL_ENDPOINT" "$REMOTE_PORT" --no-restart
 	fi
 	proxy_configured=1
 fi
 
-touch "$INSTALL_DIR/.loc-relay-client"
-install_loc_relay_command "$LOC_RELAY_BIN"
+touch "$INSTALL_DIR/.tayd-client"
+install_tayd_command "$TAYD_BIN"
 
 if [ "$SKIP_START" != "1" ]; then
-	"$LOC_RELAY_BIN" install
-	echo "[started] client gateway"
+	"$TAYD_BIN" restart
+	echo "[restarted] client gateway"
 else
 	echo "[saved] start skipped"
 fi
 
-echo "[installed] loc-relay client -> $INSTALL_DIR"
+echo "[installed] tayd client -> $INSTALL_DIR"
 echo "[server] $SERVER_ADDR:$SERVER_PORT"
-echo "[command] $BIN_DIR/loc-relay"
+echo "[command] $BIN_DIR/tayd"
 if [ "$proxy_configured" = "1" ]; then
 	echo "[proxy] $PROXY_NAME $LOCAL_ENDPOINT -> $REMOTE_PORT"
 fi
-echo "[uninstall] $BIN_DIR/loc-relay uninstall"
+echo "[uninstall] $BIN_DIR/tayd uninstall"

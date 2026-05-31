@@ -944,21 +944,23 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     private void applyScannedFrpcServer(String value) {
-        if (!isGatewayEditable()) {
-            Toast.makeText(this, "Stop gateway before editing FRPC server", Toast.LENGTH_SHORT).show();
-            return;
-        }
         try {
             ServerScanPayload payload = ServerScanPayload.parse(value);
+            boolean wasActive = GatewayRuntimeState.isActive();
             GatewayPrefs.get(this).edit()
                     .putBoolean(GatewayPrefs.KEY_FRPC_ENABLED, true)
                     .putString(GatewayPrefs.KEY_FRPC_SERVER, payload.getServer())
                     .putString(GatewayPrefs.KEY_FRPC_SERVER_PORT, Integer.toString(payload.getPort()))
                     .putString(GatewayPrefs.KEY_FRPC_TOKEN, payload.getToken())
                     .apply();
-            Toast.makeText(this, "Server saved", Toast.LENGTH_SHORT).show();
             if ("frpc".equals(selectedExtensionId)) {
                 showPage(R.id.menu_extends);
+            }
+            if (wasActive) {
+                startGateway(false, false);
+                Toast.makeText(this, "Server saved and gateway restarted", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Server saved", Toast.LENGTH_SHORT).show();
             }
         } catch (IllegalArgumentException err) {
             Toast.makeText(this, "Invalid server QR", Toast.LENGTH_SHORT).show();
@@ -1794,7 +1796,13 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     private void startGateway(boolean manualStart) {
-        saveGatewayFormIfPresent(false);
+        startGateway(manualStart, true);
+    }
+
+    private void startGateway(boolean manualStart, boolean saveForm) {
+        if (saveForm) {
+            saveGatewayFormIfPresent(false);
+        }
         pendingManualStartNotificationPermissionCheck = manualStart;
         GatewayPrefs.get(this).edit()
                 .putBoolean(GatewayPrefs.KEY_RUNNING, true)

@@ -6,7 +6,17 @@ import org.junit.Test;
 
 public class ServerScanPayloadTest {
     @Test
-    public void parsesLocRelayServerQrPayload() {
+    public void parsesTaydServerQrPayload() {
+        ServerScanPayload payload = ServerScanPayload.parse(
+                "tayd://server?addr=frp.example.com&port=7000&token=test-token");
+
+        assertEquals("frp.example.com", payload.getServer());
+        assertEquals(7000, payload.getPort());
+        assertEquals("test-token", payload.getToken());
+    }
+
+    @Test
+    public void parsesLegacyLocRelayServerQrPayload() {
         ServerScanPayload payload = ServerScanPayload.parse(
                 "loc-relay://server?addr=frp.example.com&port=7000&token=test-token");
 

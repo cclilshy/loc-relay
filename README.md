@@ -1,6 +1,6 @@
-# loc-relay
+# tayd
 
-loc-relay 是一个基于 [frp](https://github.com/fatedier/frp) 的本地服务发布工具。它把 frps/frpc 的安装配置生成和服务管理收进一个多端统一的客户端，适合把本机 Web、TCP 或 UDP 服务发布到自己的公网服务器。
+一个基于 [frp](https://github.com/fatedier/frp) 开发的本地服务发布工具, 它把 frp 的安装配置生成和服务管理收进一个多端统一的客户端, 适合把本机 Web、TCP 或 UDP 服务发布到自己的公网服务器。
 
 ## 快速开始
 
@@ -10,9 +10,9 @@ loc-relay 是一个基于 [frp](https://github.com/fatedier/frp) 的本地服务
 curl -fsSL https://raw.githubusercontent.com/cclilshy/loc-relay/main/scripts/install-server.sh | sh
 ```
 
-自定义Hostname，可选Http服务端口
+自定义hostname
 
-> 当http(s)端口被声明时，允许多个服务占用服务端http端口，frp会根据host进行路由
+> 当http(s)端口被声明时, 允许多个服务占用服务端http端口, frp会根据host进行路由
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/cclilshy/loc-relay/main/scripts/install-server.sh | sh -s -- <server-hostname> #--http-port 80 --https-port 443
@@ -20,16 +20,14 @@ curl -fsSL https://raw.githubusercontent.com/cclilshy/loc-relay/main/scripts/ins
 
 服务端安装完成后会打印客户端安装命令
 
-### 安卓客户端
+![安装结果](assets/server.png)
 
-Android 客户端在 `frpc` 页面点 `Scan server QR`，会自动填入服务器地址、端口和 token。
-
-### 基础用法
+## 基础用法
 
 添加第一个映射
 
 ```sh
-loc-relay add web 8080 18080
+tayd add web 8080 18080
 ```
 
 访问
@@ -38,38 +36,53 @@ loc-relay add web 8080 18080
 http://<server-hostname>:18080 -> 127.0.0.1:8080
 ```
 
+## 安卓客户端
+
+Android 客户端在 `frpc` 页面点 `Scan server QR`, 扫描成功后自动完成配置
+
+### 内置模块
+
+<!-- prettier-ignore -->
+| 模块 | 用途 |
+| --- | --- |
+| FRPC | 内置 `frpc` 客户端 |
+| WebHook | WebHook channels |
+| HTTP PROXY | 本机 HTTP 代理 |
+| SOCKS5 | 本机 Socks5 代理 |
+| Event Listener | 事件分发 |
+
+![Android 客户端扫码配置](assets/android.png)
+
 ## 常用场景
 
 把本机 Web 服务暴露到公网端口
 
 ```sh
-loc-relay add web 3000 18080
+tayd add web 3000 18080
 ```
 
 用域名访问本机 HTTP 服务
 
 ```sh
-loc-relay add site 3000 http://site.example.com
+tayd add site 3000 http://site.example.com
 ```
 
 UDP 服务
 
 ```sh
-loc-relay add dns udp://5353 5353
+tayd add dns udp://5353 5353
 ```
-
-更多用法请参考 `loc-relay`
 
 ## 卸载
 
 Unix:
 
 ```sh
-~/.local/bin/loc-relay uninstall
+~/.local/bin/tayd uninstall
 ```
 
 Windows PowerShell:
 
 ```powershell
-& "$HOME\.local\bin\loc-relay.cmd" uninstall
+& "$HOME\.local\bin\tayd.cmd" uninstall
 ```

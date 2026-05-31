@@ -104,7 +104,7 @@ pub(crate) fn print_server_install_info(info: &ServerInstallInfo) -> Result<()> 
 
 fn server_qr_payload(info: &ServerInstallInfo) -> String {
     format!(
-        "loc-relay://server?addr={}&port={}&token={}",
+        "tayd://server?addr={}&port={}&token={}",
         url_encode(&info.addr),
         info.port,
         url_encode(&info.token)
@@ -115,7 +115,7 @@ fn render_terminal_qr(payload: &str) -> Result<String> {
     let code = QrCode::new(payload.as_bytes())?;
     let width = code.width();
     let colors = code.to_colors();
-    let quiet = 2isize;
+    let quiet = 1isize;
     let mut output = String::new();
     for y in -quiet..(width as isize + quiet) {
         for x in -quiet..(width as isize + quiet) {
@@ -125,9 +125,9 @@ fn render_terminal_qr(payload: &str) -> Result<String> {
                 false
             };
             output.push_str(if dark {
-                "\x1b[40m  \x1b[0m"
+                "\x1b[40m \x1b[0m"
             } else {
-                "\x1b[47m  \x1b[0m"
+                "\x1b[47m \x1b[0m"
             });
         }
         output.push('\n');
@@ -149,32 +149,34 @@ fn url_encode(value: &str) -> String {
 
 pub(crate) fn usage() {
     println!(
-        r#"loc-relay
+        r#"tayd
 
 Usage:
-  loc-relay <command> [arguments] [options]
-  loc-relay add <name> <local> <remote> [options]
+  tayd <command> [arguments] [options]
+  tayd add <name> <local> <remote> [options]
 
 Commands:
-  loc-relay add <name> <local> <remote>     Add a client mapping
-  loc-relay remove <name>                   Remove a mapping
-  loc-relay list                            List mappings
-  loc-relay show [name]                     Show rendered proxy config
-  loc-relay render                          Rebuild frpc config files
-  loc-relay verify                          Verify frpc config with frpc
-  loc-relay restart                         Restart the client gateway
-  loc-relay install                         Start the client gateway
-  loc-relay uninstall                       Remove the local client install
-  loc-relay service install                 Install auto-start service
-  loc-relay service status                  Show auto-start service status
-  loc-relay service uninstall               Remove auto-start service
-  loc-relay server install                  Start the server gateway
-  loc-relay server uninstall                Stop the server gateway
-  loc-relay server info                     Show server token and QR
-  loc-relay server log                      Show server install log
-  loc-relay init --server <addr> --token <token>
+  tayd add <name> <local> <remote>          Add a client mapping
+  tayd remove <name>                        Remove a mapping
+  tayd list                                 List mappings
+  tayd show [name]                          Show rendered proxy config
+  tayd render                               Rebuild frpc config files
+  tayd verify                               Verify frpc config with frpc
+  tayd restart                              Restart the client gateway
+  tayd install                              Start the client gateway
+  tayd uninstall                            Remove the local client install
+  tayd info                                 Show server token and client install commands
+  tayd service install                      Install auto-start service
+  tayd service status                       Show auto-start service status
+  tayd service uninstall                    Remove auto-start service
+  tayd server install                       Start the server gateway
+  tayd server uninstall                     Stop the server gateway
+  tayd server restart                       Restart the server gateway
+  tayd server info                          Show server token and client install commands
+  tayd server log                           Show server install log
+  tayd init --server <addr> --token <token>
                                            Initialize client state
-  loc-relay init-server --token <token>     Initialize server state
+  tayd init-server --token <token>          Initialize server state
 
 Endpoint forms:
   local:  [tcp://|udp://|http://|https://][host:]port
@@ -205,12 +207,12 @@ Options:
     --raw-base-url url                      Installer script base URL
 
 Examples:
-  loc-relay init --server frp.example.com --token <token>
-  loc-relay add web 8080 18080
-  loc-relay add dns udp://5353 5353
-  loc-relay add game 8680 2929 --type both
-  loc-relay add site 3000 http://site.example.com
-  loc-relay add blog 3000 https://blog.example.com --group blog --group-key shard-a
-  loc-relay add app http://3000 https://app.example.com --crt fullchain.pem --key privkey.pem"#
+  tayd init --server frp.example.com --token <token>
+  tayd add web 8080 18080
+  tayd add dns udp://5353 5353
+  tayd add game 8680 2929 --type both
+  tayd add site 3000 http://site.example.com
+  tayd add blog 3000 https://blog.example.com --group blog --group-key shard-a
+  tayd add app http://3000 https://app.example.com --crt fullchain.pem --key privkey.pem"#
     );
 }

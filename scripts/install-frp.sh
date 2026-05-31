@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-INSTALL_DIR=${INSTALL_DIR:-"$HOME/.loc-relay"}
+INSTALL_DIR=${INSTALL_DIR:-"$HOME/.tayd"}
 FRP_VERSION=${FRP_VERSION:-0.69.0}
 
 die() {

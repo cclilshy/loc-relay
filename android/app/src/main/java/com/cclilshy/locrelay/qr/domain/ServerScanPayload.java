@@ -27,7 +27,8 @@ public final class ServerScanPayload {
         }
         try {
             URI uri = new URI(value.trim());
-            if (!"loc-relay".equals(uri.getScheme()) || !"server".equals(uri.getHost())) {
+            String scheme = uri.getScheme();
+            if (!("tayd".equals(scheme) || "loc-relay".equals(scheme)) || !"server".equals(uri.getHost())) {
                 throw new IllegalArgumentException("unsupported payload");
             }
             Map<String, String> query = parseQuery(uri.getRawQuery());
