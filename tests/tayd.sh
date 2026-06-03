@@ -49,12 +49,15 @@ fi
 [ -x "$repo_root/bin/tayd-darwin-amd64" ] || fail "darwin amd64 binary must be published"
 [ -f "$repo_root/scripts/install-client.ps1" ] || fail "Windows client installer must exist"
 [ -f "$repo_root/android/app/src/main/res/drawable/ic_qr_scan_24.xml" ] || fail "Android scan icon must exist"
-if find "$repo_root/android/app/src/main/java/com/cclilshy/locrelay" -maxdepth 1 -type f -name '*.java' | grep . >/dev/null 2>&1; then
+if find "$repo_root/android/app/src/main/java/com/cclilshy/tayd" -maxdepth 1 -type f -name '*.java' | grep . >/dev/null 2>&1; then
 	fail "Android Java sources must live in feature packages"
 fi
-[ -f "$repo_root/android/app/src/main/java/com/cclilshy/locrelay/qr/ui/QrScanActivity.java" ] || fail "Android QR scan activity must exist"
+[ -f "$repo_root/android/app/src/main/java/com/cclilshy/tayd/qr/ui/QrScanActivity.java" ] || fail "Android QR scan activity must exist"
 if grep -R "无窗口模式" "$repo_root/android/app/src/main/java" "$repo_root/android/app/src/main/res" >/dev/null 2>&1; then
 	fail "Android UI still contains Chinese no-window label"
+fi
+if grep -R -I -E "loc-relay|Loc Relay|LOC_RELAY|LocRelay|locrelay" "$repo_root/android" >/dev/null 2>&1; then
+	fail "Android still contains legacy loc-relay branding or package names"
 fi
 [ -x "$repo_root/android/scripts/build-frpc.sh" ] || fail "Android frpc builder must exist"
 android_frpc_plan=$(DRY_RUN=1 "$repo_root/android/scripts/build-frpc.sh")
@@ -67,15 +70,15 @@ printf '%s\n' "$android_frpc_plan" | grep -F 'x86_64 android/amd64 ndk' >/dev/nu
 printf '%s\n' "$android_frpc_plan" | grep -F 'x86 android/386 ndk' >/dev/null 2>&1 || fail "Android frpc plan must use NDK for x86"
 
 case "$(uname -m)" in
-	x86_64|amd64)
-		published_linux_bin="$repo_root/bin/tayd-linux-amd64"
-		;;
-	aarch64|arm64)
-		published_linux_bin="$repo_root/bin/tayd-linux-arm64"
-		;;
-	*)
-		published_linux_bin=
-		;;
+x86_64 | amd64)
+	published_linux_bin="$repo_root/bin/tayd-linux-amd64"
+	;;
+aarch64 | arm64)
+	published_linux_bin="$repo_root/bin/tayd-linux-arm64"
+	;;
+*)
+	published_linux_bin=
+	;;
 esac
 if [ -n "$published_linux_bin" ]; then
 	TAYD_HOME="$tmp_dir/published-frps-info" "$published_linux_bin" init-server \

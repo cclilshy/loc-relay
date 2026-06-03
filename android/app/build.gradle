@@ -2,18 +2,18 @@ plugins {
     id 'com.android.application'
 }
 
-def releaseKeystoreFile = System.getenv('TAYD_KEYSTORE_FILE') ?: System.getenv('LOC_RELAY_KEYSTORE_FILE')
-def releaseKeystorePassword = System.getenv('TAYD_KEYSTORE_PASSWORD') ?: System.getenv('LOC_RELAY_KEYSTORE_PASSWORD')
-def releaseKeyAlias = System.getenv('TAYD_KEY_ALIAS') ?: System.getenv('LOC_RELAY_KEY_ALIAS')
-def releaseKeyPassword = System.getenv('TAYD_KEY_PASSWORD') ?: System.getenv('LOC_RELAY_KEY_PASSWORD')
+def releaseKeystoreFile = System.getenv('TAYD_KEYSTORE_FILE')
+def releaseKeystorePassword = System.getenv('TAYD_KEYSTORE_PASSWORD')
+def releaseKeyAlias = System.getenv('TAYD_KEY_ALIAS')
+def releaseKeyPassword = System.getenv('TAYD_KEY_PASSWORD')
 def hasReleaseSigning = releaseKeystoreFile && releaseKeystorePassword && releaseKeyAlias && releaseKeyPassword
 
 android {
-    namespace 'com.cclilshy.locrelay'
+    namespace 'com.cclilshy.tayd'
     compileSdk 36
 
     defaultConfig {
-        applicationId 'com.cclilshy.locrelay'
+        applicationId 'com.cclilshy.tayd'
         minSdk 26
         targetSdk 28
         versionCode 1

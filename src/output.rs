@@ -3,14 +3,13 @@ use crate::{
     model::{Proxy, Server, ServerInstallInfo},
     Result,
 };
-use qrcode::{Color as QrColor, QrCode};
+use qrcode::{Color as QrColor, EcLevel, QrCode};
 use std::{
     env,
     io::{self, IsTerminal},
 };
 
-const DEFAULT_RAW_BASE_URL: &str =
-    "https://raw.githubusercontent.com/cclilshy/tayd/main/scripts";
+const DEFAULT_RAW_BASE_URL: &str = "https://raw.githubusercontent.com/cclilshy/tayd/main/scripts";
 const TERMINAL_QR_QUIET_ZONE: isize = 4;
 const TERMINAL_QR_STYLE: &str = "\x1b[30;47m";
 const TERMINAL_QR_RESET: &str = "\x1b[0m";
@@ -115,15 +114,16 @@ fn server_qr_payload(info: &ServerInstallInfo) -> String {
 }
 
 fn render_terminal_qr(payload: &str) -> Result<String> {
-    let code = QrCode::new(payload.as_bytes())?;
+    let code = terminal_qr_code(payload)?;
     let width = code.width();
     let colors = code.to_colors();
     let quiet = TERMINAL_QR_QUIET_ZONE;
+    let right_quiet = quiet + terminal_qr_extra_right_quiet(width);
     let mut output = String::new();
 
     for top_y in (-quiet..(width as isize + quiet)).step_by(2) {
         output.push_str(TERMINAL_QR_STYLE);
-        for x in -quiet..(width as isize + quiet) {
+        for x in -quiet..(width as isize + right_quiet) {
             let top_dark = terminal_qr_module_is_dark(&colors, width, x, top_y);
             let bottom_dark = terminal_qr_module_is_dark(&colors, width, x, top_y + 1);
             output.push(match (top_dark, bottom_dark) {
@@ -138,6 +138,30 @@ fn render_terminal_qr(payload: &str) -> Result<String> {
     }
 
     Ok(output)
+}
+
+fn terminal_qr_code(payload: &str) -> Result<QrCode> {
+    // Terminal output is high-contrast; low correction keeps install QR codes compact.
+    Ok(QrCode::with_error_correction_level(
+        payload.as_bytes(),
+        EcLevel::L,
+    )?)
+}
+
+fn terminal_qr_text_width(code_width: usize) -> usize {
+    let standard_width = code_width + (TERMINAL_QR_QUIET_ZONE as usize * 2);
+    // Half-block rendering packs two module rows into one terminal row, so an
+    // odd QR width needs one extra quiet column to keep the rendered shape even.
+    if standard_width % 2 == 0 {
+        standard_width
+    } else {
+        standard_width + 1
+    }
+}
+
+fn terminal_qr_extra_right_quiet(code_width: usize) -> isize {
+    (terminal_qr_text_width(code_width) - code_width - (TERMINAL_QR_QUIET_ZONE as usize * 2))
+        as isize
 }
 
 fn terminal_qr_module_is_dark(colors: &[QrColor], width: usize, x: isize, y: isize) -> bool {
@@ -165,19 +189,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn terminal_qr_renders_square_modules_with_standard_quiet_zone() {
+    fn terminal_qr_renders_compact_square_with_standard_quiet_zone() {
         let payload =
             "tayd://server?addr=frp.example.com&port=7000&token=0123456789abcdef0123456789abcdef0123456789abcdef";
         let qr = render_terminal_qr(payload).expect("QR should render");
-        let code = QrCode::new(payload.as_bytes()).expect("payload should be encodable");
-        let module_width = code.width() + (TERMINAL_QR_QUIET_ZONE as usize * 2);
+        let code = terminal_qr_code(payload).expect("payload should be encodable");
+        let module_height = code.width() + (TERMINAL_QR_QUIET_ZONE as usize * 2);
+        let text_width = terminal_qr_text_width(code.width());
         let lines: Vec<&str> = qr.lines().collect();
 
-        assert_eq!(lines.len(), module_width.div_ceil(2));
+        assert_eq!(lines.len(), module_height.div_ceil(2));
+        assert_eq!(text_width, lines.len() * 2);
         for line in &lines {
             assert!(line.starts_with(TERMINAL_QR_STYLE));
             assert!(line.ends_with(TERMINAL_QR_RESET));
-            assert_eq!(strip_ansi(line).chars().count(), module_width);
+            assert_eq!(strip_ansi(line).chars().count(), text_width);
         }
     }
 

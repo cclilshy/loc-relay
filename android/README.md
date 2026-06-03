@@ -1,4 +1,4 @@
-# Loc Relay Android
+# Tayd Android
 
 Java sources are grouped by feature and role:
 
