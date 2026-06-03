@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
 
-REPO_URL=${REPO_URL:-https://github.com/cclilshy/loc-relay.git}
-RAW_BASE_URL=${RAW_BASE_URL:-https://raw.githubusercontent.com/cclilshy/loc-relay/main/scripts}
+REPO_URL=${REPO_URL:-https://github.com/cclilshy/tayd.git}
+RAW_BASE_URL=${RAW_BASE_URL:-https://raw.githubusercontent.com/cclilshy/tayd/main/scripts}
 if [ -z "${INSTALL_DIR:-}" ] && [ -z "${SERVER_INSTALL_DIR:-}" ]; then
     if [ -d "$HOME/.tayd-server" ]; then
         INSTALL_DIR="$HOME/.tayd-server"

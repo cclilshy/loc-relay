@@ -14,7 +14,7 @@ param(
     [int]$RemotePort = 0,
     [string]$InstallDir = "",
     [string]$BinDir = (Join-Path $HOME ".local\bin"),
-    [string]$RepoUrl = "https://github.com/cclilshy/loc-relay.git",
+    [string]$RepoUrl = "https://github.com/cclilshy/tayd.git",
     [string]$FrpVersion = "0.69.0",
     [switch]$SkipStart,
     [switch]$SkipFrpDownload

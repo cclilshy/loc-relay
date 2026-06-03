@@ -7,7 +7,7 @@
 ### 服务端安装
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/cclilshy/loc-relay/main/scripts/install-server.sh | sh
+curl -fsSL https://raw.githubusercontent.com/cclilshy/tayd/main/scripts/install-server.sh | sh
 ```
 
 自定义hostname
@@ -15,12 +15,12 @@ curl -fsSL https://raw.githubusercontent.com/cclilshy/loc-relay/main/scripts/ins
 > 当http(s)端口被声明时, 允许多个服务占用服务端http端口, frp会根据host进行路由
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/cclilshy/loc-relay/main/scripts/install-server.sh | sh -s -- <server-hostname> #--http-port 80 --https-port 443
+curl -fsSL https://raw.githubusercontent.com/cclilshy/tayd/main/scripts/install-server.sh | sh -s -- <server-hostname> #--http-port 80 --https-port 443
 ```
 
 服务端安装完成后会打印客户端安装命令
 
-![安装结果](assets/server.png)
+<img src="assets/server.png" alt="安装结果" width="720">
 
 ## 基础用法
 
@@ -51,7 +51,7 @@ Android 客户端在 `frpc` 页面点 `Scan server QR`, 扫描成功后自动完
 | SOCKS5 | 本机 Socks5 代理 |
 | Event Listener | 事件分发 |
 
-![Android 客户端扫码配置](assets/android.png)
+<img src="assets/android.png" alt="Android 客户端扫码配置" width="360">
 
 ## 常用场景
 

@@ -10,7 +10,7 @@ use std::{
 };
 
 const DEFAULT_RAW_BASE_URL: &str =
-    "https://raw.githubusercontent.com/cclilshy/loc-relay/main/scripts";
+    "https://raw.githubusercontent.com/cclilshy/tayd/main/scripts";
 const TERMINAL_QR_QUIET_ZONE: isize = 4;
 const TERMINAL_QR_STYLE: &str = "\x1b[30;47m";
 const TERMINAL_QR_RESET: &str = "\x1b[0m";

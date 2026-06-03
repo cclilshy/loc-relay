@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-REPO_URL=${REPO_URL:-https://github.com/cclilshy/loc-relay.git}
+REPO_URL=${REPO_URL:-https://github.com/cclilshy/tayd.git}
 if [ -z "${INSTALL_DIR:-}" ] && [ -z "${CLIENT_INSTALL_DIR:-}" ]; then
 	if [ -d "$HOME/.tayd-client" ]; then
 		INSTALL_DIR="$HOME/.tayd-client"

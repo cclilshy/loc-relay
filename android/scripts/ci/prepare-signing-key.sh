@@ -11,10 +11,14 @@ for name in $required_vars; do
     fi
 done
 
-keystore="$RUNNER_TEMP/loc-relay-release.jks"
+keystore="$RUNNER_TEMP/tayd-release.jks"
 printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore"
 
 {
+    echo "TAYD_KEYSTORE_FILE=$keystore"
+    echo "TAYD_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD"
+    echo "TAYD_KEY_ALIAS=$ANDROID_KEY_ALIAS"
+    echo "TAYD_KEY_PASSWORD=$ANDROID_KEY_PASSWORD"
     echo "LOC_RELAY_KEYSTORE_FILE=$keystore"
     echo "LOC_RELAY_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD"
     echo "LOC_RELAY_KEY_ALIAS=$ANDROID_KEY_ALIAS"

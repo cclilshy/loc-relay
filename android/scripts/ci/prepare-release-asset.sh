@@ -22,8 +22,8 @@ fi
 
 safe_tag=$(printf '%s' "$tag" | tr '/' '-')
 mkdir -p dist
-asset="dist/loc-relay-$safe_tag.apk"
-asset_name="loc-relay-$safe_tag.apk"
+asset="dist/tayd-$safe_tag.apk"
+asset_name="tayd-$safe_tag.apk"
 
 cp "$apk" "$asset"
 

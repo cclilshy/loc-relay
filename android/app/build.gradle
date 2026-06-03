@@ -2,10 +2,10 @@ plugins {
     id 'com.android.application'
 }
 
-def releaseKeystoreFile = System.getenv('LOC_RELAY_KEYSTORE_FILE')
-def releaseKeystorePassword = System.getenv('LOC_RELAY_KEYSTORE_PASSWORD')
-def releaseKeyAlias = System.getenv('LOC_RELAY_KEY_ALIAS')
-def releaseKeyPassword = System.getenv('LOC_RELAY_KEY_PASSWORD')
+def releaseKeystoreFile = System.getenv('TAYD_KEYSTORE_FILE') ?: System.getenv('LOC_RELAY_KEYSTORE_FILE')
+def releaseKeystorePassword = System.getenv('TAYD_KEYSTORE_PASSWORD') ?: System.getenv('LOC_RELAY_KEYSTORE_PASSWORD')
+def releaseKeyAlias = System.getenv('TAYD_KEY_ALIAS') ?: System.getenv('LOC_RELAY_KEY_ALIAS')
+def releaseKeyPassword = System.getenv('TAYD_KEY_PASSWORD') ?: System.getenv('LOC_RELAY_KEY_PASSWORD')
 def hasReleaseSigning = releaseKeystoreFile && releaseKeystorePassword && releaseKeyAlias && releaseKeyPassword
 
 android {

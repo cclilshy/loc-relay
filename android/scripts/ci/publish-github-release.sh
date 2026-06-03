@@ -15,7 +15,7 @@ if gh release view "$TAG" >/dev/null 2>&1; then
     gh release upload "$TAG" "$ASSET#$ASSET_NAME" --clobber
 else
     gh release create "$TAG" "$ASSET#$ASSET_NAME" \
-        --title "loc-relay $TAG" \
+        --title "tayd $TAG" \
         --generate-notes \
         --target "$GITHUB_SHA"
 fi
